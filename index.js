@@ -307,6 +307,9 @@ var Client = module.exports = function(config) {
                     return;
                 var messageType = baseType + "/" + routePart;
                 if (block.url && block.params) {
+                    if (self.config.pathPrefix) {
+                        block.url = self.config.pathPrefix + block.url;
+                    }
                     // we ended up at an API definition part!
                     var endPoint = messageType.replace(/^[\/]+/g, "");
                     var parts = messageType.split("/");
