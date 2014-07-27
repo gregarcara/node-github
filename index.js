@@ -658,7 +658,12 @@ var Client = module.exports = function(config) {
         var host = this.config.host || this.constants.host;
         var port = this.config.port || this.constants.port || (protocol == "https" ? 443 : 80);
 
+        var headers = {
+            "content-length": "0"
+        };
+
         var proxyUrl;
+
         if (this.config.proxy !== undefined) {
             proxyUrl = this.config.proxy;
         } else {
@@ -679,14 +684,16 @@ var Client = module.exports = function(config) {
             protocol = parsedUrl.protocol.replace(":", "");
             host = parsedUrl.hostname;
             port = parsedUrl.port || (protocol == "https" ? 443 : 80);
+
+            if(parsedUrl.auth) {
+                headers["Proxy-Authorization"] = "Basic "+ (new Buffer(parsedUrl.auth).toString("base64"))
+            }
         }
         if (!hasBody && query.length)
             path += "?" + query.join("&");
 
-        var headers = {
-            "host": host,
-            "content-length": "0"
-        };
+        headers["content-length"] = "0";
+
         if (hasBody) {
             if (format == "json")
                 query = JSON.stringify(query);
