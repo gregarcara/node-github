@@ -666,10 +666,6 @@ var Client = module.exports = function(config) {
 
         var proxyUrl;
 
-        if (this.config.insecure !== undefined) {
-            process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        }
-
         if (this.config.proxy !== undefined) {
             proxyUrl = this.config.proxy;
         } else {
@@ -685,7 +681,7 @@ var Client = module.exports = function(config) {
             port = parsedUrl.port || (protocol == "https" ? 443 : 80);
 
             if (parsedUrl.auth) {
-                headers["Proxy-Authorization"] = "Basic "+ (new Buffer(parsedUrl.auth).toString("base64"))
+                headers["Proxy-Authorization"] = "Basic " + (new Buffer(parsedUrl.auth).toString("base64"))
             }
         }
         if (!hasBody && query.length)
@@ -750,7 +746,8 @@ var Client = module.exports = function(config) {
             uri: uri,
             method: method,
             headers: headers
-         };
+        };
+
         if (hasBody && query.length) {
             if (self.debug)
                 console.log("REQUEST BODY: " + query + "\n");
@@ -761,6 +758,10 @@ var Client = module.exports = function(config) {
             options.timeout = this.config.timeout;
         }
 
+        if (this.config.insecure !== undefined) {
+            options.strictSSL = this.config.insecure || false;
+        }
+
         if (proxyUrl) {
             options.proxy = proxyUrl;
         }
@@ -768,10 +769,11 @@ var Client = module.exports = function(config) {
         if (this.config.rejectUnauthorized !== undefined)
             options.rejectUnauthorized = this.config.rejectUnauthorized;
 
-        if (this.debug)
+        if (this.debug) {
             console.log("REQUEST: ", options);
+        }
 
-        request(options, function(err, res, body) {
+        request(options, function (err, res, body) {
 
             if (err) {
                 return callback(err);
@@ -790,5 +792,5 @@ var Client = module.exports = function(config) {
                 return callback(null, res);
             }
         });
-
+    };
 }).call(Client.prototype);
