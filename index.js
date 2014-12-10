@@ -577,9 +577,6 @@ var Client = module.exports = function(config) {
 
     function getQueryAndUrl(msg, def, format, config) {
         var url = def.url;
-        if (config.pathPrefix) {
-            url = config.pathPrefix + def.url;
-        }
         var ret = {
             query: format == "json" ? {} : []
         };
