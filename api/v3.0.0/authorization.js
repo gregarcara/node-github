@@ -23,10 +23,10 @@ var authorization = module.exports = {
      *  authorization#getAll(msg, callback) -> null
      *      - msg (Object): Object that contains the parameters and their values to be sent to the server.
      *      - callback (Function): function to call when the request is finished with an error as first argument and result data as second argument.
-     * 
+     *
      *  ##### Params on the `msg` object:
-     * 
-     *  - headers (Object): Optional. Key/ value pair of request headers to pass along with the HTTP request. Valid headers are: 'If-Modified-Since', 'If-None-Match', 'Cookie', 'User-Agent'.
+     *
+     *  - headers (Object): Optional. Key/ value pair of request headers to pass along with the HTTP request. Valid headers are: 'If-Modified-Since', 'If-None-Match', 'Cookie', 'User-Agent', 'Accept', 'X-GitHub-OTP'.
      *  - page (Number): Optional. Page number of the results to fetch. Validation rule: ` ^[0-9]+$ `.
      *  - per_page (Number): Optional. A custom page size up to 100. Default is 30. Validation rule: ` ^[0-9]+$ `.
      **/
@@ -45,16 +45,16 @@ var authorization = module.exports = {
                     callback(new error.InternalServerError(ex.message), res);
                 return;
             }
-            
+
             if (!ret)
                 ret = {};
             if (!ret.meta)
                 ret.meta = {};
-            ["x-ratelimit-limit", "x-ratelimit-remaining", "x-oauth-scopes", "link", "location", "last-modified", "etag", "status"].forEach(function(header) {
+            ["x-ratelimit-limit", "x-ratelimit-remaining", "x-ratelimit-reset", "x-oauth-scopes", "link", "location", "last-modified", "etag", "status"].forEach(function(header) {
                 if (res.headers[header])
                     ret.meta[header] = res.headers[header];
             });
-            
+
             if (callback)
                 callback(null, ret);
         });
@@ -64,10 +64,10 @@ var authorization = module.exports = {
      *  authorization#get(msg, callback) -> null
      *      - msg (Object): Object that contains the parameters and their values to be sent to the server.
      *      - callback (Function): function to call when the request is finished with an error as first argument and result data as second argument.
-     * 
+     *
      *  ##### Params on the `msg` object:
-     * 
-     *  - headers (Object): Optional. Key/ value pair of request headers to pass along with the HTTP request. Valid headers are: 'If-Modified-Since', 'If-None-Match', 'Cookie', 'User-Agent'.
+     *
+     *  - headers (Object): Optional. Key/ value pair of request headers to pass along with the HTTP request. Valid headers are: 'If-Modified-Since', 'If-None-Match', 'Cookie', 'User-Agent', 'Accept', 'X-GitHub-OTP'.
      *  - id (String): Required. 
      **/
     this.get = function(msg, block, callback) {
@@ -85,16 +85,16 @@ var authorization = module.exports = {
                     callback(new error.InternalServerError(ex.message), res);
                 return;
             }
-            
+
             if (!ret)
                 ret = {};
             if (!ret.meta)
                 ret.meta = {};
-            ["x-ratelimit-limit", "x-ratelimit-remaining", "x-oauth-scopes", "link", "location", "last-modified", "etag", "status"].forEach(function(header) {
+            ["x-ratelimit-limit", "x-ratelimit-remaining", "x-ratelimit-reset", "x-oauth-scopes", "link", "location", "last-modified", "etag", "status"].forEach(function(header) {
                 if (res.headers[header])
                     ret.meta[header] = res.headers[header];
             });
-            
+
             if (callback)
                 callback(null, ret);
         });
@@ -104,13 +104,13 @@ var authorization = module.exports = {
      *  authorization#create(msg, callback) -> null
      *      - msg (Object): Object that contains the parameters and their values to be sent to the server.
      *      - callback (Function): function to call when the request is finished with an error as first argument and result data as second argument.
-     * 
+     *
      *  ##### Params on the `msg` object:
-     * 
-     *  - headers (Object): Optional. Key/ value pair of request headers to pass along with the HTTP request. Valid headers are: 'If-Modified-Since', 'If-None-Match', 'Cookie', 'User-Agent'.
-     *  - scopes (Array): Optional. Optional array - A list of scopes that this authorization is in. 
-     *  - note (String): Optional. Optional string - A note to remind you what the OAuth token is for. 
-     *  - note_url (String): Optional. Optional string - A URL to remind you what app the OAuth token is for. 
+     *
+     *  - headers (Object): Optional. Key/ value pair of request headers to pass along with the HTTP request. Valid headers are: 'If-Modified-Since', 'If-None-Match', 'Cookie', 'User-Agent', 'Accept', 'X-GitHub-OTP'.
+     *  - scopes (Array): Optional. A list of scopes that this authorization is in.
+     *  - note (String): Optional. A note to remind you what the OAuth token is for.
+     *  - note_url (String): Optional. A URL to remind you what app the OAuth token is for.
      **/
     this.create = function(msg, block, callback) {
         var self = this;
@@ -127,16 +127,16 @@ var authorization = module.exports = {
                     callback(new error.InternalServerError(ex.message), res);
                 return;
             }
-            
+
             if (!ret)
                 ret = {};
             if (!ret.meta)
                 ret.meta = {};
-            ["x-ratelimit-limit", "x-ratelimit-remaining", "x-oauth-scopes", "link", "location", "last-modified", "etag", "status"].forEach(function(header) {
+            ["x-ratelimit-limit", "x-ratelimit-remaining", "x-ratelimit-reset", "x-oauth-scopes", "link", "location", "last-modified", "etag", "status"].forEach(function(header) {
                 if (res.headers[header])
                     ret.meta[header] = res.headers[header];
             });
-            
+
             if (callback)
                 callback(null, ret);
         });
@@ -146,16 +146,16 @@ var authorization = module.exports = {
      *  authorization#update(msg, callback) -> null
      *      - msg (Object): Object that contains the parameters and their values to be sent to the server.
      *      - callback (Function): function to call when the request is finished with an error as first argument and result data as second argument.
-     * 
+     *
      *  ##### Params on the `msg` object:
-     * 
-     *  - headers (Object): Optional. Key/ value pair of request headers to pass along with the HTTP request. Valid headers are: 'If-Modified-Since', 'If-None-Match', 'Cookie', 'User-Agent'.
+     *
+     *  - headers (Object): Optional. Key/ value pair of request headers to pass along with the HTTP request. Valid headers are: 'If-Modified-Since', 'If-None-Match', 'Cookie', 'User-Agent', 'Accept', 'X-GitHub-OTP'.
      *  - id (String): Required. 
-     *  - scopes (Array): Optional. Optional array - A list of scopes that this authorization is in. 
-     *  - add_scopes (Array): Optional. Optional array - A list of scopes to add to this authorization. 
-     *  - remove_scopes (Array): Optional. Optional array - A list of scopes to remove from this authorization. 
-     *  - note (String): Optional. Optional string - A note to remind you what the OAuth token is for. 
-     *  - note_url (String): Optional. Optional string - A URL to remind you what app the OAuth token is for. 
+     *  - scopes (Array): Optional. A list of scopes that this authorization is in.
+     *  - add_scopes (Array): Optional. A list of scopes to add to this authorization.
+     *  - remove_scopes (Array): Optional. A list of scopes to remove from this authorization.
+     *  - note (String): Optional. A note to remind you what the OAuth token is for.
+     *  - note_url (String): Optional. A URL to remind you what app the OAuth token is for.
      **/
     this.update = function(msg, block, callback) {
         var self = this;
@@ -172,16 +172,16 @@ var authorization = module.exports = {
                     callback(new error.InternalServerError(ex.message), res);
                 return;
             }
-            
+
             if (!ret)
                 ret = {};
             if (!ret.meta)
                 ret.meta = {};
-            ["x-ratelimit-limit", "x-ratelimit-remaining", "x-oauth-scopes", "link", "location", "last-modified", "etag", "status"].forEach(function(header) {
+            ["x-ratelimit-limit", "x-ratelimit-remaining", "x-ratelimit-reset", "x-oauth-scopes", "link", "location", "last-modified", "etag", "status"].forEach(function(header) {
                 if (res.headers[header])
                     ret.meta[header] = res.headers[header];
             });
-            
+
             if (callback)
                 callback(null, ret);
         });
@@ -191,10 +191,10 @@ var authorization = module.exports = {
      *  authorization#delete(msg, callback) -> null
      *      - msg (Object): Object that contains the parameters and their values to be sent to the server.
      *      - callback (Function): function to call when the request is finished with an error as first argument and result data as second argument.
-     * 
+     *
      *  ##### Params on the `msg` object:
-     * 
-     *  - headers (Object): Optional. Key/ value pair of request headers to pass along with the HTTP request. Valid headers are: 'If-Modified-Since', 'If-None-Match', 'Cookie', 'User-Agent'.
+     *
+     *  - headers (Object): Optional. Key/ value pair of request headers to pass along with the HTTP request. Valid headers are: 'If-Modified-Since', 'If-None-Match', 'Cookie', 'User-Agent', 'Accept', 'X-GitHub-OTP'.
      *  - id (String): Required. 
      **/
     this.delete = function(msg, block, callback) {
@@ -212,16 +212,16 @@ var authorization = module.exports = {
                     callback(new error.InternalServerError(ex.message), res);
                 return;
             }
-            
+
             if (!ret)
                 ret = {};
             if (!ret.meta)
                 ret.meta = {};
-            ["x-ratelimit-limit", "x-ratelimit-remaining", "x-oauth-scopes", "link", "location", "last-modified", "etag", "status"].forEach(function(header) {
+            ["x-ratelimit-limit", "x-ratelimit-remaining", "x-ratelimit-reset", "x-oauth-scopes", "link", "location", "last-modified", "etag", "status"].forEach(function(header) {
                 if (res.headers[header])
                     ret.meta[header] = res.headers[header];
             });
-            
+
             if (callback)
                 callback(null, ret);
         });

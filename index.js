@@ -174,12 +174,20 @@ var request = require("request");
  *      }
  **/
 var Client = module.exports = function(config) {
+    config.headers = config.headers || {};
     this.config = config;
     this.debug = Util.isTrue(config.debug);
 
     this.version = config.version;
     var cls = require("./api/v" + this.version);
     this[this.version] = new cls(this);
+
+    var pathPrefix = "";
+    // Check if a prefix is passed in the config and strip any leading or trailing slashes from it.
+    if (typeof config.pathPrefix == "string") {
+        pathPrefix = "/" + config.pathPrefix.replace(/(^[\/]+|[\/]+$)/g, "");
+        this.config.pathPrefix = pathPrefix;
+    }
 
     this.setupRoutes();
 };
@@ -240,8 +248,10 @@ var Client = module.exports = function(config) {
                         throw new error.BadRequest("Invalid variable parameter name substitution; param '" +
                             paramName + "' not found in defines block", "fatal");
                     }
-                    else
-                        def = defines.params[paramName];
+                    else {
+                        def = paramsStruct[paramName] = defines.params[paramName];
+                        delete paramsStruct["$" + paramName];
+                    }
                 }
                 else
                     def = paramsStruct[paramName];
@@ -250,7 +260,7 @@ var Client = module.exports = function(config) {
                 if (typeof value != "boolean" && !value) {
                     // we don't need to validation for undefined parameter values
                     // that are not required.
-                    if (!def.required)
+                    if (!def.required || (def["allow-empty"] && value === ""))
                         continue;
                     throw new error.BadRequest("Empty value for parameter '" +
                         paramName + "': " + value);
@@ -392,18 +402,35 @@ var Client = module.exports = function(config) {
      *          type: "oauth",
      *          token: "e5a4a27487c26e571892846366de023349321a73"
      *      });
+     *
+     *      // or oauth key/ secret
+     *      github.authenticate({
+     *          type: "oauth",
+     *          key: "clientID",
+     *          secret: "clientSecret"
+     *      });
+     *
+     *      // or token
+     *      github.authenticate({
+     *          type: "token",
+     *          token: "userToken",
+     *      });
      **/
     this.authenticate = function(options) {
         if (!options) {
             this.auth = false;
             return;
         }
-        if (!options.type || "basic|oauth".indexOf(options.type) === -1)
-            throw new Error("Invalid authentication type, must be 'basic' or 'oauth'");
+        if (!options.type || "basic|oauth|client|token".indexOf(options.type) === -1)
+            throw new Error("Invalid authentication type, must be 'basic', 'oauth' or 'client'");
         if (options.type == "basic" && (!options.username || !options.password))
             throw new Error("Basic authentication requires both a username and password to be set");
-        if (options.type == "oauth" && !options.token)
-            throw new Error("OAuth2 authentication requires a token to be set");
+        if (options.type == "oauth") {
+            if (!options.token && !(options.key && options.secret))
+                throw new Error("OAuth2 authentication requires a token or key & secret to be set");
+        }
+        if (options.type == "token" && !options.token)
+            throw new Error("Token authentication requires a token to be set");
 
         this.auth = options;
     };
@@ -548,14 +575,19 @@ var Client = module.exports = function(config) {
         getPage.call(this, link, "first", callback);
     };
 
-    function getQueryAndUrl(msg, def, format) {
+    function getQueryAndUrl(msg, def, format, config) {
+        var url = def.url;
+        if (config.pathPrefix) {
+            url = config.pathPrefix + def.url;
+        }
         var ret = {
-            url: def.url,
             query: format == "json" ? {} : []
         };
-        if (!def || !def.params)
+        if (!def || !def.params) {
+            ret.url = url;
             return ret;
-        var url = def.url;
+        }
+
         Object.keys(def.params).forEach(function(paramName) {
             paramName = paramName.replace(/^[$]+/, "");
             if (!(paramName in msg))
@@ -564,18 +596,30 @@ var Client = module.exports = function(config) {
             var isUrlParam = url.indexOf(":" + paramName) !== -1;
             var valFormat = isUrlParam || format != "json" ? "query" : format;
             var val;
-            if (valFormat != "json" && typeof msg[paramName] == "object") {
-                try {
-                    msg[paramName] = JSON.stringify(msg[paramName]);
+            if (valFormat != "json") {
+                if (typeof msg[paramName] == "object") {
+                    try {
+                        msg[paramName] = JSON.stringify(msg[paramName]);
+                        val = encodeURIComponent(msg[paramName]);
+                    }
+                    catch (ex) {
+                        return Util.log("httpSend: Error while converting object to JSON: "
+                            + (ex.message || ex), "error");
+                    }
+                }
+                else if (def.params[paramName] && def.params[paramName].combined) {
+                    // Check if this is a combined (search) string.
+                    val = msg[paramName].split(/[\s\t\r\n]*\+[\s\t\r\n]*/)
+                                        .map(function(part) {
+                                            return encodeURIComponent(part);
+                                        })
+                                        .join("+");
+                }
+                else
                     val = encodeURIComponent(msg[paramName]);
-                }
-                catch (ex) {
-                    return Util.log("httpSend: Error while converting object to JSON: "
-                        + (ex.message || ex), "error");
-                }
             }
             else
-                val = valFormat == "json" ? msg[paramName] : encodeURIComponent(msg[paramName]);
+                val = msg[paramName];
 
             if (isUrlParam) {
                 url = url.replace(":" + paramName, val);
@@ -609,7 +653,7 @@ var Client = module.exports = function(config) {
         var format = hasBody && this.constants.requestFormat
             ? this.constants.requestFormat
             : "query";
-        var obj = getQueryAndUrl(msg, block, format);
+        var obj = getQueryAndUrl(msg, block, format, self.config);
         var query = obj.query;
         var url = this.config.url ? this.config.url + obj.url : obj.url;
 
@@ -635,6 +679,9 @@ var Client = module.exports = function(config) {
                 proxyUrl = "https://" + proxyUrl;
 
             var parsedUrl = Url.parse(proxyUrl);
+            protocol = parsedUrl.protocol.replace(":", "");
+            host = parsedUrl.hostname;
+            port = parsedUrl.port || (protocol == "https" ? 443 : 80);
 
             if (parsedUrl.auth) {
                 headers["Proxy-Authorization"] = "Basic " + (new Buffer(parsedUrl.auth).toString("base64"))
@@ -659,12 +706,17 @@ var Client = module.exports = function(config) {
             var basic;
             switch (this.auth.type) {
                 case "oauth":
-                    path += (path.indexOf("?") === -1 ? "?" : "&") +
-                        "access_token=" + encodeURIComponent(this.auth.token);
+                    if (this.auth.token) {
+                        path += (path.indexOf("?") === -1 ? "?" : "&") +
+                            "access_token=" + encodeURIComponent(this.auth.token);
+                    } else {
+                        path += (path.indexOf("?") === -1 ? "?" : "&") +
+                            "client_id=" + encodeURIComponent(this.auth.key) +
+                            "&client_secret=" + encodeURIComponent(this.auth.secret);
+                    }
                     break;
                 case "token":
-                    basic = new Buffer(this.auth.username + "/token:" + this.auth.token, "ascii").toString("base64");
-                    headers.authorization = "Basic " + basic;
+                    headers.authorization = "token " + this.auth.token;
                     break;
                 case "basic":
                     basic = new Buffer(this.auth.username + ":" + this.auth.password, "ascii").toString("base64");
@@ -675,16 +727,21 @@ var Client = module.exports = function(config) {
             }
         }
 
-        if (!msg.headers)
-            msg.headers = {};
-        Object.keys(msg.headers).forEach(function (header) {
-            var headerLC = header.toLowerCase();
-            if (self.requestHeaders.indexOf(headerLC) == -1)
-                return;
-            headers[headerLC] = msg.headers[header];
-        });
+        function addCustomHeaders(customHeaders) {
+            Object.keys(customHeaders).forEach(function(header) {
+                var headerLC = header.toLowerCase();
+                if (self.requestHeaders.indexOf(headerLC) == -1)
+                    return;
+                headers[headerLC] = customHeaders[header];
+            });
+        }
+        addCustomHeaders(Util.extend(msg.headers || {}, this.config.headers));
+
         if (!headers["user-agent"])
             headers["user-agent"] = "NodeJS HTTP Client";
+
+        if (!("accept" in headers))
+            headers.accept = this.config.requestMedia || this.constants.requestMedia;
 
         var uri = protocol + "://" + host + ":" + port + path;
 
@@ -711,6 +768,9 @@ var Client = module.exports = function(config) {
         if (proxyUrl) {
             options.proxy = proxyUrl;
         }
+
+        if (this.config.rejectUnauthorized !== undefined)
+            options.rejectUnauthorized = this.config.rejectUnauthorized;
 
         if (this.debug) {
             console.log("REQUEST: ", options);
