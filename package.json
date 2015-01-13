@@ -16,7 +16,7 @@
         "node": ">=0.4.0"
     },
     "dependencies": {
-        "request": "~2.44.0"
+        "request": "~2.x"
     },
     "devDependencies": {
         "oauth": "~0.9.7",
