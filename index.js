@@ -660,7 +660,6 @@ var Client = module.exports = function(config) {
         var port = this.config.port || this.constants.port || (protocol == "https" ? 443 : 80);
 
         var headers = {
-            "content-length": "0",
             "host": host
         };
 
@@ -684,14 +683,11 @@ var Client = module.exports = function(config) {
         if (!hasBody && query.length)
             path += "?" + query.join("&");
 
-        headers["content-length"] = "0";
-
         if (hasBody) {
             if (format == "json")
                 query = JSON.stringify(query);
             else
                 query = query.join("&");
-            headers["content-length"] = Buffer.byteLength(query, "utf8");
             headers["content-type"] = format == "json"
                 ? "application/json; charset=utf-8"
                 : "application/x-www-form-urlencoded; charset=utf-8";
