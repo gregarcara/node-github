@@ -755,10 +755,6 @@ var Client = module.exports = function(config) {
             options.strictSSL = this.config.insecure || false;
         }
 
-        if (this.config.rejectUnauthorized !== undefined) {
-          options.rejectUnauthorized = this.config.rejectUnauthorized || true;
-        }
-
         if (proxyUrl) {
             options.proxy = proxyUrl;
         }
