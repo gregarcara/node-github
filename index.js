@@ -755,8 +755,6 @@ var Client = module.exports = function(config) {
             options.strictSSL = this.config.insecure || false;
         }
 
-        console.log(this.config);
-
         if (this.config.rejectUnauthorized !== undefined) {
           options.rejectUnauthorized = this.config.rejectUnauthorized || true;
         }
